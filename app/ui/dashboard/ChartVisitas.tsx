@@ -46,11 +46,14 @@ export function ChartVisitas() {
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log("Iniciando carga de datos");
         const clientDate = new Date().toISOString();
+        console.log("Fecha del cliente:", clientDate);
         const data = await processChartData(clientDate);
+        console.log("Datos recibidos:", data);
         setUserCountsByHour(data);
       } catch (error) {
-        console.error("Error loading data:", error);
+        console.error("Error al cargar datos:", error);
       } finally {
         setIsLoading(false);
       }
@@ -60,11 +63,11 @@ export function ChartVisitas() {
   }, []);
 
   const data = {
-    labels: userCountsByHour.map((item) => item.hour),
+    labels: userCountsByHour?.map((item) => item.hour) || [],
     datasets: [
       {
         label: "Logeados",
-        data: userCountsByHour.map((item) => item.loggedIn),
+        data: userCountsByHour?.map((item) => item.loggedIn) || [],
         borderColor: "rgba(75, 192, 192, 0.8)",
         backgroundColor: "rgba(75, 192, 192, 0.2)",
         fill: true,
@@ -75,7 +78,7 @@ export function ChartVisitas() {
       },
       {
         label: "Anónimos",
-        data: userCountsByHour.map((item) => item.notLoggedIn),
+        data: userCountsByHour?.map((item) => item.notLoggedIn) || [],
         borderColor: "rgba(255, 99, 132, 0.8)",
         backgroundColor: "rgba(255, 99, 132, 0.2)",
         fill: true,
