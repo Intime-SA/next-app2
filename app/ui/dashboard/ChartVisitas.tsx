@@ -42,6 +42,7 @@ type UserCountData = {
 export function ChartVisitas() {
   const [userCountsByHour, setUserCountsByHour] = useState<UserCountData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -51,9 +52,16 @@ export function ChartVisitas() {
         console.log("Fecha del cliente:", clientDate);
         const data = await processChartData(clientDate);
         console.log("Datos recibidos:", data);
-        setUserCountsByHour(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setUserCountsByHour(data);
+        } else {
+          setError("No se recibieron datos válidos");
+        }
       } catch (error) {
         console.error("Error al cargar datos:", error);
+        setError(
+          "Error al cargar los datos. Por favor, intente de nuevo más tarde."
+        );
       } finally {
         setIsLoading(false);
       }
@@ -63,11 +71,11 @@ export function ChartVisitas() {
   }, []);
 
   const data = {
-    labels: userCountsByHour?.map((item) => item.hour) || [],
+    labels: userCountsByHour.map((item) => item.hour),
     datasets: [
       {
         label: "Logeados",
-        data: userCountsByHour?.map((item) => item.loggedIn) || [],
+        data: userCountsByHour.map((item) => item.loggedIn),
         borderColor: "rgba(75, 192, 192, 0.8)",
         backgroundColor: "rgba(75, 192, 192, 0.2)",
         fill: true,
@@ -78,7 +86,7 @@ export function ChartVisitas() {
       },
       {
         label: "Anónimos",
-        data: userCountsByHour?.map((item) => item.notLoggedIn) || [],
+        data: userCountsByHour.map((item) => item.notLoggedIn),
         borderColor: "rgba(255, 99, 132, 0.8)",
         backgroundColor: "rgba(255, 99, 132, 0.2)",
         fill: true,
@@ -160,6 +168,28 @@ export function ChartVisitas() {
         </CardHeader>
         <CardContent className="p-6 h-[calc(100%-100px)]">
           <Skeleton className="w-full h-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="w-full h-[calc(100vh-200px)] mt-4">
+        <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
+          <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
+            <CardTitle>Error</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent
+          style={{ width: "100%", height: "500px" }}
+          className="flex items-center justify-center"
+        >
+          <p>
+            No se pudieron cargar los datos. Por favor, intente de nuevo más
+            tarde.
+          </p>
         </CardContent>
       </Card>
     );
