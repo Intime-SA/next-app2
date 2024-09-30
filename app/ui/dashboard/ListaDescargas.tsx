@@ -13,6 +13,7 @@ import { ChartVisitas } from "./ChartVisitas";
 import ChartUsers from "./ChartUsers";
 import { ChartsMobile } from "./ChartsMobile";
 import { ChartIsLogged } from "./ChartIsLogged";
+import ChartTrakeo from "../charts/ChartTrakeo";
 
 const TrakeoAlimentosNaturales: React.FC = () => {
   const [chartData, setChartData] = useState<ChartData[]>([]);
@@ -132,7 +133,7 @@ const TrakeoAlimentosNaturales: React.FC = () => {
         <ChartsMobile />
         <ChartIsLogged />
       </div>
-      {/*       <div
+      <div
         style={{
           display: "flex",
           justifyContent: isMobile ? "center" : "flex-start",
@@ -141,7 +142,7 @@ const TrakeoAlimentosNaturales: React.FC = () => {
         }}
       >
         <ChartTrakeo />
-      </div> */}
+      </div>
     </div>
   );
 };

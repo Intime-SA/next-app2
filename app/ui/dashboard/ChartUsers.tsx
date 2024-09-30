@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { TrendingUp } from "lucide-react";
-import { Pie, PieChart, Label } from "recharts";
+import { Pie } from "react-chartjs-2";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import {
   Card,
   CardContent,
@@ -11,16 +12,46 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
 import { useMediaQuery } from "@mui/material";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonDemo, SkeletonPieCard } from "../charts/SkeletonLine";
 import { processUserData } from "@/app/actions/ChartActions";
+
+ChartJS.register(ArcElement, Tooltip, Legend);
+
+const provinceColors: { [key: string]: string } = {
+  "buenos aires": "#ff5733",
+  caba: "#400ad5",
+  cordoba: "#33ff57",
+  córdoba: "#33ff57",
+  "santa fe": "#3357ff",
+  corrientes: "#31ab1c",
+  mendoza: "#ff33a6",
+  tucuman: "#ffc300",
+  tucumán: "#ffc300",
+  salta: "#ff5733",
+  chaco: "#33ffcc",
+  "entre rios": "#9933ff",
+  formosa: "#ff33b5",
+  "rio negro": "#ff8c00",
+  neuquen: "#7fff00",
+  neuquén: "#7fff00",
+  misiones: "#ffffff",
+  "san luis": "#ffd700",
+  jujuy: "#6a5acd",
+  catamarca: "#adff2f",
+  "la pampa": "#00fa9a",
+  "santa cruz": "#00ced1",
+  "tierra del fuego": "#ff69b4",
+};
+
+const getProvinceColor = (province: string): string => {
+  const normalizedProvince = province.toLowerCase().trim();
+  return (
+    provinceColors[normalizedProvince] ||
+    "#" + Math.floor(Math.random() * 16777215).toString(16)
+  );
+};
 
 export const ChartUsers: React.FC = () => {
   const [userData, setUserData] = React.useState<{
@@ -49,16 +80,48 @@ export const ChartUsers: React.FC = () => {
     fetchData();
   }, []);
 
-  const chartConfig = {
-    desktop: {
-      label: "Desktop",
-      color: "hsl(var(--chart-1))",
+  const chartData = {
+    labels: userData.chartData.map((item) => item.province),
+    datasets: [
+      {
+        data: userData.chartData.map((item) => item.count),
+        backgroundColor: userData.chartData.map((item) =>
+          getProvinceColor(item.province)
+        ),
+        borderColor: userData.chartData.map(() => "hsl(var(--background))"),
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false, // This line removes the legend
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            const label = context.label || "";
+            const value = context.parsed;
+            const total = context.dataset.data.reduce(
+              (a: number, b: number) => a + b,
+              0
+            );
+            const percentage = ((value / total) * 100).toFixed(1);
+            return `${label}: ${value} (${percentage}%)`;
+          },
+        },
+        backgroundColor: "hsl(var(--background))",
+        titleColor: "hsl(var(--foreground))",
+        bodyColor: "hsl(var(--foreground))",
+        borderColor: "hsl(var(--border))",
+        borderWidth: 1,
+      },
     },
-    mobile: {
-      label: "Mobile",
-      color: "hsl(var(--chart-2))",
-    },
-  } satisfies ChartConfig;
+  };
 
   return (
     <Card
@@ -102,54 +165,9 @@ export const ChartUsers: React.FC = () => {
             <Skeleton className="h-[250px] w-full rounded-xl" />
           </div>
         ) : (
-          <ChartContainer
-            config={chartConfig}
-            className="mx-auto aspect-square max-h-[250px]"
-          >
-            <PieChart>
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent hideLabel />}
-              />
-              <Pie
-                data={userData.chartData}
-                dataKey="count"
-                nameKey="province"
-                innerRadius={60}
-                strokeWidth={5}
-              >
-                <Label
-                  content={({ viewBox }) => {
-                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                      return (
-                        <text
-                          x={viewBox.cx}
-                          y={viewBox.cy}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                        >
-                          <tspan
-                            x={viewBox.cx}
-                            y={viewBox.cy}
-                            className="fill-foreground text-3xl font-bold"
-                          >
-                            {userData.totalUsers.toLocaleString()}
-                          </tspan>
-                          <tspan
-                            x={viewBox.cx}
-                            y={(viewBox.cy || 0) + 24}
-                            className="fill-muted-foreground"
-                          >
-                            Total Usuarios
-                          </tspan>
-                        </text>
-                      );
-                    }
-                  }}
-                />
-              </Pie>
-            </PieChart>
-          </ChartContainer>
+          <div style={{ height: "400px", width: "100%" }}>
+            <Pie data={chartData} options={options} />
+          </div>
         )}
       </CardContent>
       {loading ? (
@@ -161,6 +179,9 @@ export const ChartUsers: React.FC = () => {
           <div className="flex gap-2 font-medium leading-none">
             Usuarios agrupados por Provincia
             <TrendingUp className="h-4 w-4" />
+          </div>
+          <div className="leading-none text-muted-foreground">
+            Total Usuarios: {userData.totalUsers.toLocaleString()}
           </div>
           <div className="leading-none text-muted-foreground">
             Cuidado! hay provincias mal escritas...

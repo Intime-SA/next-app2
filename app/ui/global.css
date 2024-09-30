@@ -103,6 +103,37 @@ input[type="number"]::-webkit-outer-spin-button {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --color-provincia-de-buenos-aires: #ff5733; /* Color para Buenos Aires */
+    --color-bs-as: #ff5733; /* Color para Buenos Aires */
+    --color-buenos-aires: #ff5733; /* Color para Buenos Aires */
+    --color-caba: #400ad5; /* Color para Buenos Aires */
+    --color-cordoba: #33ff57; /* Color para Córdoba */
+    --color-córdoba: #33ff57; /* Color para Córdoba */
+    --color-santa-fe: #3357ff; /* Color para Santa Fe */
+    --color-corrientes: rgb(49, 171, 28); /* Color para Santa Fe */
+    --color-mendoza: #ff33a6; /* Color para Mendoza */
+    --color-tucuman: #ffc300; /* Color para Tucumán */
+    --color-tucumán: #ffc300; /* Color para Tucumán */
+    --color-salta: #ff5733; /* Color para Salta */
+    --color-chaco: #33ffcc; /* Color para Chaco */
+    --color-entre-rios: #9933ff; /* Color para Entre Ríos */
+    --color-formosa: #ff33b5; /* Color para Formosa */
+    --color-rio-negro: #ff8c00; /* Color para Río Negro */
+    --color-neuquen: #7fff00; /* Color para Neuquén */
+    --color-neuquén: #7fff00; /* Color para Neuquén */
+    --color-misiones: #ffffff; /* Color para Neuquén */
+    --color-san-luis: #ffd700; /* Color para San Luis */
+    --color-jujuy: #6a5acd; /* Color para Jujuy */
+    --color-catamarca: #adff2f; /* Color para Catamarca */
+    --color-la-pampa: #00fa9a; /* Color para La Pampa */
+    --color-santa-cruz: #00ced1; /* Color para Santa Cruz */
+    --color-tierra-del-fuego: #ff69b4; /* Color para Tierra del Fuego */
+    --color-tierra-del-fuego: grey; /* Color para Tierra del Fuego */
+
+    --color-mobile: #42a5f5; /* Color para usuarios móviles */
+    --color-desktop: #7e57c2; /* Color para usuarios de escritorio */
+    --chart-1: 207, 76%, 53%; /* HSL para el color móvil */
+    --chart-2: 262, 52%, 47%; /* HSL para el color escritorio */
 
     --color-mobile: #42a5f5; /* Color para usuarios móviles */
     --color-desktop: #7e57c2; /* Color para usuarios de escritorio */

@@ -2,15 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { TrendingUp } from "lucide-react";
+import { Bar } from "react-chartjs-2";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  LabelList,
-  XAxis,
-  YAxis,
-} from "recharts";
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
 import {
   Card,
   CardContent,
@@ -19,12 +20,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonDemo } from "../charts/SkeletonLine";
 import {
@@ -32,11 +27,14 @@ import {
   processUserActivityData,
 } from "@/app/actions/ChartActions";
 
-const chartConfig = {
-  count: {
-    label: "Usuarios ",
-  },
-} satisfies ChartConfig;
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 export function ChartIsLogged() {
   const [chartData, setChartData] = useState<ChartDataLogged[]>([]);
@@ -57,6 +55,73 @@ export function ChartIsLogged() {
 
     fetchData();
   }, []);
+
+  const data = {
+    labels: chartData.map((item) =>
+      item.status === "Usuario" ? "Logeados" : "No Logeados"
+    ),
+    datasets: [
+      {
+        label: "Usuarios",
+        data: chartData.map((item) => item.count),
+        backgroundColor: chartData.map(
+          (item) =>
+            item.status === "Usuario"
+              ? "hsl(190, 90%, 50%)" // Bright cyan for logged-in users
+              : "hsl(330, 90%, 60%)" // Vibrant pink for anonymous users
+        ),
+        borderColor: chartData.map(
+          (item) =>
+            item.status === "Usuario"
+              ? "hsl(190, 90%, 40%)" // Slightly darker cyan for border
+              : "hsl(330, 90%, 50%)" // Slightly darker pink for border
+        ),
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            const label =
+              context.label === "Logeados" ? "Logeados" : "Anonimos";
+            return `${label}: ${context.parsed.y}`;
+          },
+        },
+        backgroundColor: "hsl(var(--background))",
+        titleColor: "hsl(var(--foreground))",
+        bodyColor: "hsl(var(--foreground))",
+        borderColor: "hsl(var(--border))",
+        borderWidth: 1,
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          color: "hsl(var(--foreground))",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        ticks: {
+          color: "hsl(var(--foreground))",
+        },
+        grid: {
+          color: "hsl(var(--border))",
+        },
+      },
+    },
+  };
 
   return (
     <Card
@@ -88,30 +153,9 @@ export function ChartIsLogged() {
         {loading ? (
           <Skeleton className="h-[250px] w-full rounded-xl" />
         ) : (
-          <ChartContainer config={chartConfig}>
-            <BarChart data={chartData}>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey="status" />
-              <YAxis />
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent hideLabel hideIndicator />}
-              />
-              <Bar dataKey="count">
-                <LabelList position="top" dataKey="count" fillOpacity={1} />
-                {chartData.map((item) => (
-                  <Cell
-                    key={item.status}
-                    fill={
-                      item.status === "Usuario"
-                        ? "hsl(var(--chart-1))"
-                        : "hsl(var(--chart-2))"
-                    }
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ChartContainer>
+          <div style={{ height: "300px" }}>
+            <Bar data={data} options={options} />
+          </div>
         )}
       </CardContent>
 
@@ -133,3 +177,5 @@ export function ChartIsLogged() {
     </Card>
   );
 }
+
+export default ChartIsLogged;

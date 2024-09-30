@@ -4,10 +4,14 @@ import {
   fetchTrackingData,
   fetchVisitData,
   UserActivityData,
+  fetchUserData,
+  User,
+  fetchUserActivityData,
+  UserActivity,
+  fetchUserActivityDataLocalidades,
+  UserActivityDataLocalidades,
 } from "@/app/lib/data";
 import { ChartDataSeguimiento } from "@/app/lib/definitions";
-
-import { fetchUserData, User } from "@/app/lib/data";
 
 export async function processChartData(clientDate: string) {
   console.log("Server Action called with date:", clientDate);
@@ -173,8 +177,6 @@ export async function processMobileData(): Promise<ChartData[]> {
   ];
 }
 
-import { fetchUserActivityData, UserActivity } from "@/app/lib/data";
-
 export interface ChartDataLogged {
   status: string;
   count: number;
@@ -223,4 +225,68 @@ export async function processUserActivityData(): Promise<ChartDataLogged[]> {
 
   const processedData = Object.values(uniqueUsers);
   return processUserDataLogged(processedData);
+}
+
+// Nuevas funciones para ChartTrakeo
+
+export interface ChartDataTrakeo {
+  location: string;
+  abbreviation: string;
+  count: number;
+  fill: string;
+}
+
+const excludedIPs = ["192.168.1.1", "10.0.0.1"]; // Cambia estos valores según sea necesario
+
+const generateRandomColor = (): string => {
+  return "#" + Math.floor(Math.random() * 16777215).toString(16);
+};
+
+const generateAbbreviation = (location: string): string => {
+  const commaIndex = location.indexOf(",");
+  if (commaIndex !== -1) {
+    location = location.substring(0, commaIndex).trim();
+  }
+
+  const words = location.split(" ");
+
+  if (words.length === 1) {
+    return location.substring(0, 2).toUpperCase();
+  } else {
+    return words.map((word) => word[0].toUpperCase()).join("");
+  }
+};
+
+export async function processLocationData(): Promise<ChartDataTrakeo[]> {
+  const data = await fetchUserActivityDataLocalidades();
+  const locationCounts: Record<string, Set<string>> = {};
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  const recentData = data.filter((entry) => {
+    const entryDate = new Date(entry.dateTime);
+    return entryDate >= twentyFourHoursAgo && entryDate <= now;
+  });
+
+  recentData.forEach((entry) => {
+    const { location, ip } = entry;
+
+    if (excludedIPs.includes(ip)) return;
+
+    if (location) {
+      if (!locationCounts[location]) {
+        locationCounts[location] = new Set();
+      }
+      locationCounts[location].add(ip);
+    }
+  });
+
+  return Object.entries(locationCounts)
+    .map(([location, ips]) => ({
+      location,
+      abbreviation: generateAbbreviation(location),
+      count: ips.size,
+      fill: generateRandomColor(),
+    }))
+    .sort((a, b) => b.count - a.count);
 }

@@ -217,7 +217,7 @@ export function ChartVisitas() {
   }
 
   return (
-    <Card className="w-full h-[calc(100vh-200px)] mt-4">
+    <Card className="w-full h-[calc(60vh-200px)] mt-4">
       <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
           <CardTitle>Estadísticas en vivo</CardTitle>
@@ -226,7 +226,7 @@ export function ChartVisitas() {
           </CardDescription>
         </div>
       </CardHeader>
-      <CardContent style={{ width: "100%", height: "500px" }}>
+      <CardContent style={{ width: "100%", height: "80%" }}>
         <div className="w-full h-full" style={{ position: "relative" }}>
           <Line options={options} data={data} />
         </div>

@@ -25,6 +25,7 @@ import { db, secondDb } from "./firebaseConfig";
 import { format, toZonedTime } from "date-fns-tz";
 import { addHours } from "date-fns";
 
+// Interfaces
 export interface User {
   datosEnvio?: {
     provincia?: string;
@@ -49,45 +50,101 @@ export interface UserActivity {
   userAgent: string;
 }
 
-export async function fetchUserActivityData(): Promise<UserActivity[]> {
+export interface ChartDataSeguimientoL {
+  dateTime: string;
+  ip: string;
+  isLogged: boolean;
+  location: string;
+  user: null;
+  userAgent: string;
+}
+
+export interface UserActivityDataLocalidades {
+  dateTime: string;
+  ip: string;
+  isLogged: boolean;
+  isMobile: boolean;
+  location: string;
+  user: {
+    email: string;
+    rol: string;
+  } | null;
+  userAgent: string;
+}
+
+// Cache para almacenar los datos
+let cachedDbData: any[] = [];
+let cachedSecondDbData: any[] = [];
+let lastFetchTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+// Función para obtener datos de la base de datos principal
+async function fetchDbData() {
+  if (Date.now() - lastFetchTime < CACHE_DURATION && cachedDbData.length > 0) {
+    return cachedDbData;
+  }
   try {
-    const querySnapshot = await getDocs(collection(secondDb, "trakeoKaury"));
-    return querySnapshot.docs.map((doc) => doc.data() as UserActivity);
+    const querySnapshot = await getDocs(collection(db, "users"));
+    cachedDbData = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    lastFetchTime = Date.now();
+    return cachedDbData;
   } catch (error) {
-    console.error("Error fetching data from Firestore:", error);
+    console.error("Error fetching data from main database:", error);
     return [];
   }
+}
+
+// Función para obtener datos de la base de datos secundaria
+async function fetchSecondDbData() {
+  if (
+    Date.now() - lastFetchTime < CACHE_DURATION &&
+    cachedSecondDbData.length > 0
+  ) {
+    return cachedSecondDbData;
+  }
+  try {
+    const querySnapshot = await getDocs(collection(secondDb, "trakeoKaury"));
+    cachedSecondDbData = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    lastFetchTime = Date.now();
+    return cachedSecondDbData;
+  } catch (error) {
+    console.error("Error fetching data from secondary database:", error);
+    return [];
+  }
+}
+
+export async function fetchUserActivityDataLocalidades(): Promise<
+  UserActivityDataLocalidades[]
+> {
+  const data = await fetchSecondDbData();
+  return data;
+}
+
+// Funciones de fetch existentes refactorizadas
+export async function fetchVisitData(): Promise<ChartDataSeguimientoL[]> {
+  const data = await fetchSecondDbData();
+  return data as ChartDataSeguimientoL[];
+}
+
+export async function fetchUserData(): Promise<User[]> {
+  const data = await fetchDbData();
+  return data as User[];
 }
 
 export async function fetchTrackingData(): Promise<UserActivityData[]> {
-  try {
-    const querySnapshot = await getDocs(collection(secondDb, "trakeoKaury"));
-    return querySnapshot.docs.map((doc) => doc.data() as UserActivityData);
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    return [];
-  }
+  const data = await fetchSecondDbData();
+  return data as UserActivityData[];
 }
 
-export async function fetchUserData() {
-  try {
-    const querySnapshot = await getDocs(collection(db, "users"));
-    const users: User[] = querySnapshot.docs.map((doc) => doc.data() as User);
-    return users;
-  } catch (error) {
-    console.error("Error fetching user data:", error);
-    return [];
-  }
-}
-
-export async function fetchVisitData(): Promise<ChartDataSeguimiento[]> {
-  try {
-    const querySnapshot = await getDocs(collection(secondDb, "trakeoKaury"));
-    return querySnapshot.docs.map((doc) => doc.data() as ChartDataSeguimiento);
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    return [];
-  }
+export async function fetchUserActivityData(): Promise<UserActivity[]> {
+  const data = await fetchSecondDbData();
+  return data as UserActivity[];
 }
 
 export async function fetchRevenue() {
@@ -126,13 +183,12 @@ export async function fetchLatestInvoices() {
   }
 }
 
-// Asegúrate de que este es el archivo donde está la configuración de Firebase
-
-// Función para obtener los datos de la tabla "trakeoKaury"
+// Interfaz para el resultado paginado
 interface PaginatedResult {
-  data: TrakeoData[]; // Los datos obtenidos
-  lastVisible: any; // El último documento visible para futuras consultas
+  data: TrakeoData[];
+  lastVisible: any;
 }
+
 export const fetchOrdersData = async (): Promise<{
   orders: Order[];
   chartData: ChartData[];
@@ -259,193 +315,6 @@ export const fetchTrakeoData = async (
 
 // Método para obtener los primeros 10 usuarios FIREBASE
 export async function getFirstTenUsers() {
-  try {
-    // Referencia a la colección de "users"
-    const usersRef = collection(db, "users");
-
-    // Consulta para obtener los primeros 10 documentos
-    const q = query(usersRef, limit(10));
-
-    // Ejecutar la consulta
-    const querySnapshot = await getDocs(q);
-
-    // Mapear los documentos para obtener los datos
-    const usersList = querySnapshot.docs.map((doc) => ({
-      id: doc.id, // ID del documento
-      ...doc.data(), // Información del usuario
-    }));
-
-    return usersList;
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    return [];
-  }
-}
-
-export async function fetchCardData() {
-  try {
-    // You can probably combine these into a single SQL query
-    // However, we are intentionally splitting them to demonstrate
-    // how to initialize multiple queries in parallel with JS.
-    const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`;
-    const customerCountPromise = sql`SELECT COUNT(*) FROM customers`;
-    const invoiceStatusPromise = sql`SELECT
-         SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS "paid",
-         SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS "pending"
-         FROM invoices`;
-
-    const data = await Promise.all([
-      invoiceCountPromise,
-      customerCountPromise,
-      invoiceStatusPromise,
-    ]);
-
-    const numberOfInvoices = Number(data[0].rows[0].count ?? "0");
-    const numberOfCustomers = Number(data[1].rows[0].count ?? "0");
-    const totalPaidInvoices = formatCurrency(data[2].rows[0].paid ?? "0");
-    const totalPendingInvoices = formatCurrency(data[2].rows[0].pending ?? "0");
-
-    return {
-      numberOfCustomers,
-      numberOfInvoices,
-      totalPaidInvoices,
-      totalPendingInvoices,
-    };
-  } catch (error) {
-    console.error("Database Error:", error);
-    throw new Error("Failed to fetch card data.");
-  }
-}
-
-const ITEMS_PER_PAGE = 6;
-export async function fetchFilteredInvoices(
-  query: string,
-  currentPage: number
-) {
-  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-
-  try {
-    const invoices = await sql<InvoicesTable>`
-      SELECT
-        invoices.id,
-        invoices.amount,
-        invoices.date,
-        invoices.status,
-        customers.name,
-        customers.email,
-        customers.image_url
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
-      WHERE
-        customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`} OR
-        invoices.amount::text ILIKE ${`%${query}%`} OR
-        invoices.date::text ILIKE ${`%${query}%`} OR
-        invoices.status ILIKE ${`%${query}%`}
-      ORDER BY invoices.date DESC
-      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
-    `;
-
-    return invoices.rows;
-  } catch (error) {
-    console.error("Database Error:", error);
-    throw new Error("Failed to fetch invoices.");
-  }
-}
-
-export async function fetchInvoicesPages(query: string) {
-  try {
-    const count = await sql`SELECT COUNT(*)
-    FROM invoices
-    JOIN customers ON invoices.customer_id = customers.id
-    WHERE
-      customers.name ILIKE ${`%${query}%`} OR
-      customers.email ILIKE ${`%${query}%`} OR
-      invoices.amount::text ILIKE ${`%${query}%`} OR
-      invoices.date::text ILIKE ${`%${query}%`} OR
-      invoices.status ILIKE ${`%${query}%`}
-  `;
-
-    const totalPages = Math.ceil(Number(count.rows[0].count) / ITEMS_PER_PAGE);
-    return totalPages;
-  } catch (error) {
-    console.error("Database Error:", error);
-    throw new Error("Failed to fetch total number of invoices.");
-  }
-}
-
-export async function fetchInvoiceById(id: string) {
-  try {
-    const data = await sql<InvoiceForm>`
-      SELECT
-        invoices.id,
-        invoices.customer_id,
-        invoices.amount,
-        invoices.status
-      FROM invoices
-      WHERE invoices.id = ${id};
-    `;
-
-    const invoice = data.rows.map((invoice) => ({
-      ...invoice,
-      // Convert amount from cents to dollars
-      amount: invoice.amount / 100,
-    }));
-
-    return invoice[0];
-  } catch (error) {
-    console.error("Database Error:", error);
-    throw new Error("Failed to fetch invoice.");
-  }
-}
-
-export async function fetchCustomers() {
-  try {
-    const data = await sql<CustomerField>`
-      SELECT
-        id,
-        name
-      FROM customers
-      ORDER BY name ASC
-    `;
-
-    const customers = data.rows;
-    return customers;
-  } catch (err) {
-    console.error("Database Error:", err);
-    throw new Error("Failed to fetch all customers.");
-  }
-}
-
-export async function fetchFilteredCustomers(query: string) {
-  try {
-    const data = await sql<CustomersTableType>`
-		SELECT
-		  customers.id,
-		  customers.name,
-		  customers.email,
-		  customers.image_url,
-		  COUNT(invoices.id) AS total_invoices,
-		  SUM(CASE WHEN invoices.status = 'pending' THEN invoices.amount ELSE 0 END) AS total_pending,
-		  SUM(CASE WHEN invoices.status = 'paid' THEN invoices.amount ELSE 0 END) AS total_paid
-		FROM customers
-		LEFT JOIN invoices ON customers.id = invoices.customer_id
-		WHERE
-		  customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`}
-		GROUP BY customers.id, customers.name, customers.email, customers.image_url
-		ORDER BY customers.name ASC
-	  `;
-
-    const customers = data.rows.map((customer) => ({
-      ...customer,
-      total_pending: formatCurrency(customer.total_pending),
-      total_paid: formatCurrency(customer.total_paid),
-    }));
-
-    return customers;
-  } catch (err) {
-    console.error("Database Error:", err);
-    throw new Error("Failed to fetch customer table.");
-  }
+  const data = await fetchDbData();
+  return data.slice(0, 10);
 }

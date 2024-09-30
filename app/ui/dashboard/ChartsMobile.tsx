@@ -1,15 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Pie,
-  PieChart,
-  Label,
-  Sector,
-  Tooltip,
-  ResponsiveContainer,
-  TooltipProps,
-} from "recharts";
+import { Pie } from "react-chartjs-2";
 import { useMediaQuery } from "@mui/material";
 import {
   Card,
@@ -18,33 +10,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChartData, processMobileData } from "@/app/actions/ChartActions";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  ChartOptions,
+} from "chart.js";
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 const defaultData: ChartData[] = [
-  { deviceType: "Mobile", usuarios: 0, fill: "var(--color-mobile)" },
-  { deviceType: "Desktop", usuarios: 0, fill: "var(--color-desktop)" },
+  { deviceType: "Mobile", usuarios: 0, fill: "hsl(215, 100%, 60%)" },
+  { deviceType: "Desktop", usuarios: 0, fill: "hsl(145, 80%, 50%)" },
 ];
-
-const chartConfig = {
-  usuarios: { label: "Usuarios" },
-  mobile: { label: "Mobile", color: "hsl(var(--chart-1))" },
-  desktop: { label: "Computadora", color: "hsl(var(--chart-2))" },
-} satisfies ChartConfig;
-
-const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload as ChartData;
-    return (
-      <div className="bg-background p-2 border border-border rounded shadow">
-        <p className="font-bold">{data.deviceType}</p>
-        <p>Usuarios: {data.usuarios}</p>
-      </div>
-    );
-  }
-  return null;
-};
 
 export function ChartsMobile() {
   const [chartData, setChartData] = useState<ChartData[]>(defaultData);
@@ -56,7 +37,15 @@ export function ChartsMobile() {
     async function loadData() {
       try {
         const data = await processMobileData();
-        setChartData(data);
+        setChartData(
+          data.map((item) => ({
+            ...item,
+            fill:
+              item.deviceType === "Mobile"
+                ? "hsl(215, 100%, 60%)"
+                : "hsl(145, 80%, 50%)",
+          }))
+        );
       } catch (err) {
         console.error("Error loading data:", err);
       } finally {
@@ -68,6 +57,47 @@ export function ChartsMobile() {
   }, []);
 
   const totalusuarios = chartData.reduce((sum, item) => sum + item.usuarios, 0);
+
+  const data = {
+    labels: chartData.map((item) => item.deviceType),
+    datasets: [
+      {
+        data: chartData.map((item) => item.usuarios),
+        backgroundColor: chartData.map((item) => item.fill),
+        borderColor: chartData.map((item) => item.fill),
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const options: ChartOptions<"pie"> = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: {
+          color: "hsl(var(--foreground))",
+          font: {
+            size: 14,
+          },
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const label = context.label || "";
+            const value = context.parsed || 0;
+            return `${label}: ${value} usuarios`;
+          },
+        },
+        backgroundColor: "hsl(var(--background))",
+        titleColor: "hsl(var(--foreground))",
+        bodyColor: "hsl(var(--foreground))",
+        borderColor: "hsl(var(--border))",
+        borderWidth: 1,
+      },
+    },
+  };
 
   return (
     <Card
@@ -98,45 +128,24 @@ export function ChartsMobile() {
         {loading ? (
           <Skeleton className="h-[300px] w-full" />
         ) : (
-          <ChartContainer
-            config={chartConfig}
-            className="mx-auto aspect-square max-h-[300px]"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  dataKey="usuarios"
-                  nameKey="deviceType"
-                  innerRadius={60}
-                  outerRadius={80}
-                  labelLine={false}
-                  fill="#8884d8"
-                >
-                  {chartData.map((entry, index) => (
-                    <Sector
-                      key={`sector-${index}`}
-                      fill={entry.fill}
-                      strokeWidth={5}
-                    />
-                  ))}
-                  <Label
-                    value={totalusuarios.toLocaleString()}
-                    position="center"
-                    className="text-3xl font-bold fill-foreground"
-                  />
-                  <Label
-                    value=""
-                    position="center"
-                    className="text-xs fill-muted-foreground"
-                  />
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartContainer>
+          <div className="relative mx-auto aspect-square max-h-[300px]">
+            <Pie data={data} options={options} />
+            <div
+              className="absolute inset-0 flex flex-col items-center justify-center"
+              style={{ pointerEvents: "none" }}
+            >
+              <span className="text-3xl font-bold">
+                {totalusuarios.toLocaleString()}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Total Usuarios
+              </span>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
   );
 }
+
+export default ChartsMobile;
