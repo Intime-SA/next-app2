@@ -115,7 +115,7 @@ const TrakeoAlimentosNaturales: React.FC = () => {
         }}
       >
         <ChartsOrders chartData={chartData} />
-        {/* <ChartVisitas /> */}
+        <ChartVisitas />
       </div>
       {/* <div
         style={{
