@@ -11,9 +11,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { collection, getDocs } from "firebase/firestore";
-import { secondDb } from "@/app/lib/firebaseConfig";
-
 import {
   Card,
   CardContent,
@@ -29,28 +26,12 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SkeletonDemo } from "./SkeletonLine";
+import { SkeletonDemo } from "../charts/SkeletonLine";
+import {
+  ChartDataLogged,
+  processUserActivityData,
+} from "@/app/actions/ChartActions";
 
-// Interfaz para los datos de actividad de usuario
-interface UserActivity {
-  dateTime: string; // Debe estar en formato ISO
-  ip: string;
-  isLogged: boolean;
-  location: string;
-  user: {
-    email: string;
-    rol: string;
-  } | null;
-  userAgent: string;
-}
-
-// Interfaz para los datos del gráfico
-interface ChartData {
-  status: string;
-  count: number;
-}
-
-// Configuración del gráfico
 const chartConfig = {
   count: {
     label: "Usuarios ",
@@ -58,74 +39,19 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function ChartIsLogged() {
-  const [chartData, setChartData] = useState<ChartData[]>([]);
-
-  const [loading, setLoading] = React.useState<boolean>(true); // Estado de carga
-
-  // Función para agrupar los datos por estado de "isLogged"
-  const processUserData = (data: UserActivity[]): ChartData[] => {
-    const groupedData = {
-      loggedIn: 0,
-      loggedOut: 0,
-    };
-
-    data.forEach((item) => {
-      if (item.isLogged) {
-        groupedData.loggedIn += 1;
-      } else {
-        groupedData.loggedOut += 1;
-      }
-    });
-
-    return [
-      { status: "Usuario", count: groupedData.loggedIn },
-      { status: "Anonimo", count: groupedData.loggedOut },
-    ];
-  };
+  const [chartData, setChartData] = useState<ChartDataLogged[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const querySnapshot = await getDocs(
-          collection(secondDb, "trakeoKaury")
-        );
-        const rawData: UserActivity[] = querySnapshot.docs.map(
-          (doc) => doc.data() as UserActivity
-        );
-
-        const now = new Date();
-        const twentyFourHoursAgo = new Date(
-          now.getTime() - 24 * 60 * 60 * 1000
-        );
-
-        const recentData = rawData.filter((entry) => {
-          const entryDate = new Date(entry.dateTime);
-          return entryDate >= twentyFourHoursAgo && entryDate <= now;
-        });
-
-        // Usar reduce para agrupar por IP
-        const uniqueUsers = recentData.reduce(
-          (acc: Record<string, UserActivity>, entry) => {
-            if (!acc[entry.ip]) {
-              acc[entry.ip] = entry; // Solo agrega la primera entrada por IP
-            }
-            return acc;
-          },
-          {}
-        );
-
-        // Convertir el objeto a un array
-        const processedData = Object.values(uniqueUsers);
-
-        // Procesar los datos para agrupar por estado de "isLogged"
-        const finalData = processUserData(processedData);
-
-        setChartData(finalData);
-        setLoading(false); // Seteamos el estado con los datos procesados
+        const data = await processUserActivityData();
+        setChartData(data);
       } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
         setLoading(false);
-        console.error("Error fetching data from Firestore:", error);
       }
     };
 

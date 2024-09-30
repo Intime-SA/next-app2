@@ -10,9 +10,7 @@ import {
   ResponsiveContainer,
   TooltipProps,
 } from "recharts";
-import { collection, getDocs } from "firebase/firestore";
 import { useMediaQuery } from "@mui/material";
-import { secondDb } from "@/app/lib/firebaseConfig";
 import {
   Card,
   CardContent,
@@ -22,18 +20,7 @@ import {
 } from "@/components/ui/card";
 import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface UserActivityData {
-  isMobile: boolean;
-  ip: string;
-  dateTime: string;
-}
-
-interface ChartData {
-  deviceType: string;
-  usuarios: number;
-  fill: string;
-}
+import { ChartData, processMobileData } from "@/app/actions/ChartActions";
 
 const defaultData: ChartData[] = [
   { deviceType: "Mobile", usuarios: 0, fill: "var(--color-mobile)" },
@@ -45,26 +32,6 @@ const chartConfig = {
   mobile: { label: "Mobile", color: "hsl(var(--chart-1))" },
   desktop: { label: "Computadora", color: "hsl(var(--chart-2))" },
 } satisfies ChartConfig;
-
-const fetchTrackingData = async (): Promise<UserActivityData[]> => {
-  try {
-    const querySnapshot = await getDocs(collection(secondDb, "trakeoKaury"));
-    return querySnapshot.docs.map((doc) => doc.data() as UserActivityData);
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    return [];
-  }
-};
-
-const filterLast24Hours = (data: UserActivityData[]): UserActivityData[] => {
-  const now = new Date();
-  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-  return data.filter((record) => {
-    const recordDate = new Date(record.dateTime);
-    return recordDate >= yesterday;
-  });
-};
 
 const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   if (active && payload && payload.length) {
@@ -88,41 +55,10 @@ export function ChartsMobile() {
   useEffect(() => {
     async function loadData() {
       try {
-        const data = await fetchTrackingData();
-        const filteredData = filterLast24Hours(data);
-
-        const userCount: { Mobile: number; Desktop: number } = {
-          Mobile: 0,
-          Desktop: 0,
-        };
-        const countedIPs = new Set<string>();
-
-        filteredData.forEach((record) => {
-          const { isMobile, ip } = record;
-
-          if (!countedIPs.has(ip)) {
-            countedIPs.add(ip);
-            const deviceType = isMobile ? "Mobile" : "Desktop";
-            userCount[deviceType] += 1;
-          }
-        });
-
-        const mappedData: ChartData[] = [
-          {
-            deviceType: "Mobile",
-            usuarios: userCount.Mobile,
-            fill: "var(--color-mobile)",
-          },
-          {
-            deviceType: "Computadora",
-            usuarios: userCount.Desktop,
-            fill: "var(--color-desktop)",
-          },
-        ];
-
-        setChartData(mappedData);
+        const data = await processMobileData();
+        setChartData(data);
       } catch (err) {
-        console.log(err);
+        console.error("Error loading data:", err);
       } finally {
         setLoading(false);
       }

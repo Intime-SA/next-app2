@@ -10,6 +10,9 @@ import { ChartVentasDiarias } from "./ChartVentasDiarias";
 import { fetchOrdersData } from "@/app/lib/data"; // Asegúrate de importar tu función
 import { ChartData, Order } from "@/app/lib/definitions";
 import { ChartVisitas } from "./ChartVisitas";
+import ChartUsers from "./ChartUsers";
+import { ChartsMobile } from "./ChartsMobile";
+import { ChartIsLogged } from "./ChartIsLogged";
 
 const TrakeoAlimentosNaturales: React.FC = () => {
   const [chartData, setChartData] = useState<ChartData[]>([]);
@@ -117,7 +120,7 @@ const TrakeoAlimentosNaturales: React.FC = () => {
         <ChartsOrders chartData={chartData} />
         <ChartVisitas />
       </div>
-      {/* <div
+      <div
         style={{
           width: "100%",
           display: "flex",
@@ -129,7 +132,7 @@ const TrakeoAlimentosNaturales: React.FC = () => {
         <ChartsMobile />
         <ChartIsLogged />
       </div>
-      <div
+      {/*       <div
         style={{
           display: "flex",
           justifyContent: isMobile ? "center" : "flex-start",

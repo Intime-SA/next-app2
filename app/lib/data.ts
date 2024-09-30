@@ -25,6 +25,61 @@ import { db, secondDb } from "./firebaseConfig";
 import { format, toZonedTime } from "date-fns-tz";
 import { addHours } from "date-fns";
 
+export interface User {
+  datosEnvio?: {
+    provincia?: string;
+  };
+}
+
+export interface UserActivityData {
+  isMobile: boolean;
+  ip: string;
+  dateTime: string;
+}
+
+export interface UserActivity {
+  dateTime: string;
+  ip: string;
+  isLogged: boolean;
+  location: string;
+  user: {
+    email: string;
+    rol: string;
+  } | null;
+  userAgent: string;
+}
+
+export async function fetchUserActivityData(): Promise<UserActivity[]> {
+  try {
+    const querySnapshot = await getDocs(collection(secondDb, "trakeoKaury"));
+    return querySnapshot.docs.map((doc) => doc.data() as UserActivity);
+  } catch (error) {
+    console.error("Error fetching data from Firestore:", error);
+    return [];
+  }
+}
+
+export async function fetchTrackingData(): Promise<UserActivityData[]> {
+  try {
+    const querySnapshot = await getDocs(collection(secondDb, "trakeoKaury"));
+    return querySnapshot.docs.map((doc) => doc.data() as UserActivityData);
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    return [];
+  }
+}
+
+export async function fetchUserData() {
+  try {
+    const querySnapshot = await getDocs(collection(db, "users"));
+    const users: User[] = querySnapshot.docs.map((doc) => doc.data() as User);
+    return users;
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    return [];
+  }
+}
+
 export async function fetchVisitData(): Promise<ChartDataSeguimiento[]> {
   try {
     const querySnapshot = await getDocs(collection(secondDb, "trakeoKaury"));

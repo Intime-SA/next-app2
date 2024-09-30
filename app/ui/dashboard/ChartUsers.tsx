@@ -17,74 +17,37 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/app/lib/firebaseConfig";
 import { useMediaQuery } from "@mui/material";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SkeletonDemo, SkeletonPieCard } from "./SkeletonLine";
-
-interface User {
-  datosEnvio?: {
-    provincia?: string;
-  };
-}
+import { SkeletonDemo, SkeletonPieCard } from "../charts/SkeletonLine";
+import { processUserData } from "@/app/actions/ChartActions";
 
 export const ChartUsers: React.FC = () => {
   const [userData, setUserData] = React.useState<{
     totalUsers: number;
-    usersByProvince: Record<string, number>;
+    chartData: Array<{ province: string; count: number; fill: string }>;
   }>({
     totalUsers: 0,
-    usersByProvince: {},
+    chartData: [],
   });
 
   const isMobile = useMediaQuery("(max-width:600px)");
-
-  const [loading, setLoading] = React.useState<boolean>(true); // Estado de carga
+  const [loading, setLoading] = React.useState<boolean>(true);
 
   React.useEffect(() => {
-    const fetchUsers = async () => {
-      const querySnapshot = await getDocs(collection(db, "users"));
-      let totalUsers = 0;
-      const provinceCounts: Record<string, number> = {};
-
-      querySnapshot.forEach((doc) => {
-        const user = doc.data() as User;
-        totalUsers += 1;
-
-        const province = user?.datosEnvio?.provincia?.trim().toLowerCase();
-        if (province) {
-          const normalizedProvince = province.replace(/\s+/g, " ");
-          provinceCounts[normalizedProvince] =
-            (provinceCounts[normalizedProvince] || 0) + 1;
-        }
-      });
-
-      setUserData({
-        totalUsers,
-        usersByProvince: provinceCounts,
-      });
-      setLoading(false); // Actualizar el estado de carga
+    const fetchData = async () => {
+      try {
+        const data = await processUserData();
+        setUserData(data);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    fetchUsers();
+    fetchData();
   }, []);
-
-  const chartData = Object.entries(userData.usersByProvince)
-    .sort(([provinceA], [provinceB]) => provinceA.localeCompare(provinceB))
-    .map(([province, count]) => {
-      const normalizedProvince = province.toLowerCase().replace(/\s+/g, "-");
-      const fillColor =
-        normalizedProvince === "buenos-aires"
-          ? "var(--color-buenos-aires)"
-          : `var(--color-${normalizedProvince})`;
-
-      return {
-        province,
-        count,
-        fill: fillColor,
-      };
-    });
 
   const chartConfig = {
     desktop: {
@@ -105,8 +68,7 @@ export const ChartUsers: React.FC = () => {
         marginRight: isMobile ? "0rem" : "1rem",
       }}
     >
-      {" "}
-      {loading ? ( // Muestra el loading si aún se están cargando los datos
+      {loading ? (
         <div
           style={{
             width: "100%",
@@ -127,7 +89,7 @@ export const ChartUsers: React.FC = () => {
         </CardHeader>
       )}
       <CardContent className="flex-1 pb-0">
-        {loading ? ( // Muestra el loading si aún se están cargando los datos
+        {loading ? (
           <div
             style={{
               width: "100%",
@@ -150,7 +112,7 @@ export const ChartUsers: React.FC = () => {
                 content={<ChartTooltipContent hideLabel />}
               />
               <Pie
-                data={chartData}
+                data={userData.chartData}
                 dataKey="count"
                 nameKey="province"
                 innerRadius={60}
