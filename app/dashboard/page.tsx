@@ -1,3 +1,4 @@
-export default function Page() {
-  return <p>Dashboard Page</p>;
+// page.tsx o layout.tsx
+export default async function Page() {
+  return <div></div>;
 }
