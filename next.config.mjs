@@ -5,6 +5,9 @@ const nextConfig = {
     config.externals = [...config.externals, { canvas: "canvas" }];
     return config;
   },
+  experimental: {
+    serverActions: true,
+  },
 };
 
 export default nextConfig;
