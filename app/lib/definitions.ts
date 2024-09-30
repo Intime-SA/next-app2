@@ -138,3 +138,12 @@ export interface ChartData {
   label?: string;
   uniqueIPs?: number;
 }
+
+export type ChartDataSeguimiento = {
+  dateTime: string;
+  ip: string;
+  isLogged: boolean;
+  location: string;
+  user: null;
+  userAgent: string;
+};

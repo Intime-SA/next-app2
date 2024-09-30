@@ -1,6 +1,7 @@
 import { sql } from "@vercel/postgres";
 import {
   ChartData,
+  ChartDataSeguimiento,
   CustomerField,
   CustomersTableType,
   InvoiceForm,
@@ -23,6 +24,16 @@ import {
 import { db, secondDb } from "./firebaseConfig";
 import { format, toZonedTime } from "date-fns-tz";
 import { addHours } from "date-fns";
+
+export async function fetchVisitData(): Promise<ChartDataSeguimiento[]> {
+  try {
+    const querySnapshot = await getDocs(collection(secondDb, "trakeoKaury"));
+    return querySnapshot.docs.map((doc) => doc.data() as ChartDataSeguimiento);
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    return [];
+  }
+}
 
 export async function fetchRevenue() {
   try {
