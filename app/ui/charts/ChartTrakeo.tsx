@@ -118,12 +118,18 @@ export function ChartTrakeo() {
           </>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent style={{ width: "100%" }}>
         {isLoading ? (
           <Skeleton className="h-[300px] w-full" />
         ) : (
-          <div style={{ height: `${Math.max(300, chartData.length * 40)}px` }}>
-            <Bar data={data} options={options} />
+          <div
+            style={{
+              height: `${Math.max(300, chartData.length * 40)}px`,
+              width: "100%",
+              marginLeft: "-3rem",
+            }}
+          >
+            <Bar style={{ width: "100vw" }} data={data} options={options} />
           </div>
         )}
       </CardContent>

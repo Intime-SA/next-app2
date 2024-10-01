@@ -43,6 +43,18 @@ export function ChartVisitas() {
   const [userCountsByHour, setUserCountsByHour] = useState<UserCountData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -126,6 +138,7 @@ export function ChartVisitas() {
     },
     scales: {
       x: {
+        display: !isMobile,
         grid: {
           display: false,
         },
@@ -217,7 +230,7 @@ export function ChartVisitas() {
   }
 
   return (
-    <Card className="w-full h-[calc(60vh-200px)] mt-4">
+    <Card className="w-full h-[calc(100vh-200px)] mt-4">
       <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
           <CardTitle>Estadísticas en vivo</CardTitle>

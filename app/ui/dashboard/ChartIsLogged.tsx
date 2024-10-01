@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { TrendingUp } from "lucide-react";
 import { Bar } from "react-chartjs-2";
@@ -11,6 +9,8 @@ import {
   Title,
   Tooltip,
   Legend,
+  ChartOptions,
+  ChartData,
 } from "chart.js";
 import {
   Card,
@@ -56,7 +56,7 @@ export function ChartIsLogged() {
     fetchData();
   }, []);
 
-  const data = {
+  const data: ChartData<"bar"> = {
     labels: chartData.map((item) =>
       item.status === "Usuario" ? "Logeados" : "No Logeados"
     ),
@@ -64,35 +64,34 @@ export function ChartIsLogged() {
       {
         label: "Usuarios",
         data: chartData.map((item) => item.count),
-        backgroundColor: chartData.map(
-          (item) =>
-            item.status === "Usuario"
-              ? "hsl(190, 90%, 50%)" // Bright cyan for logged-in users
-              : "hsl(330, 90%, 60%)" // Vibrant pink for anonymous users
+        backgroundColor: chartData.map((item) =>
+          item.status === "Usuario"
+            ? "hsl(190, 90%, 50%)"
+            : "hsl(330, 90%, 60%)"
         ),
-        borderColor: chartData.map(
-          (item) =>
-            item.status === "Usuario"
-              ? "hsl(190, 90%, 40%)" // Slightly darker cyan for border
-              : "hsl(330, 90%, 50%)" // Slightly darker pink for border
+        borderColor: chartData.map((item) =>
+          item.status === "Usuario"
+            ? "hsl(190, 90%, 40%)"
+            : "hsl(330, 90%, 50%)"
         ),
         borderWidth: 1,
       },
     ],
   };
 
-  const options = {
+  const options: ChartOptions<"bar"> = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         display: false,
       },
       tooltip: {
         callbacks: {
-          label: (context: any) => {
+          label: (context) => {
             const label =
               context.label === "Logeados" ? "Logeados" : "Anonimos";
-            return `${label}: ${context.parsed.y}`;
+            return `${label}: ${context.formattedValue}`;
           },
         },
         backgroundColor: "hsl(var(--background))",
@@ -121,22 +120,20 @@ export function ChartIsLogged() {
         },
       },
     },
+    layout: {
+      padding: {
+        top: 20,
+        bottom: 20,
+        left: 20,
+        right: 20,
+      },
+    },
   };
 
   return (
-    <Card
-      style={{
-        width: "100%",
-        marginTop: "1rem",
-        display: "flex",
-        justifyContent: "center",
-        flexDirection: "column",
-      }}
-    >
+    <Card className="w-full mt-4 flex flex-col h-[500px]">
       {loading ? (
-        <CardHeader
-          style={{ display: "flex", justifyContent: "center", width: "100%" }}
-        >
+        <CardHeader className="flex justify-center w-full">
           <SkeletonDemo />
         </CardHeader>
       ) : (
@@ -144,16 +141,16 @@ export function ChartIsLogged() {
           <CardTitle>Estado de Sesión de Usuarios</CardTitle>
           <CardDescription>
             Usuarios navegan Logeados o Anonimos{" "}
-            <span style={{ fontWeight: "100" }}> - (ultimas 24hs)</span>
+            <span className="font-thin"> - (ultimas 24hs)</span>
           </CardDescription>
         </CardHeader>
       )}
 
-      <CardContent>
+      <CardContent className="flex-grow">
         {loading ? (
-          <Skeleton className="h-[250px] w-full rounded-xl" />
+          <Skeleton className="h-full w-full rounded-xl" />
         ) : (
-          <div style={{ height: "300px" }}>
+          <div className="h-full w-full">
             <Bar data={data} options={options} />
           </div>
         )}

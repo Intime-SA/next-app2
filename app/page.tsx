@@ -9,10 +9,8 @@ import TrakeoAlimentosNaturales from "./ui/dashboard/ListaDescargas";
 
 export default function Page() {
   return (
-    <main className="flex min-h-screen flex-col p-6">
-      <div>
-        <TrakeoAlimentosNaturales />
-      </div>
+    <main className="flex min-h-screen flex-col p-0">
+      <TrakeoAlimentosNaturales />
     </main>
   );
 }
